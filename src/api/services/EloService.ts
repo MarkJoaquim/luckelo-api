@@ -7,7 +7,6 @@ import { Elo } from '../models/Elo';
 import { EloRepository } from '../repositories/EloRepository';
 import { events } from '../subscribers/events';
 import { User } from '../models/User';
-import { Game } from '../models/Game';
 
 @Service()
 export class EloService {
@@ -18,9 +17,14 @@ export class EloService {
         @Logger(__filename) private log: LoggerInterface
     ) { }
 
-    public findOne(username: string, game: string): Promise<Elo | undefined> {
+    public async findOne(username: string, game: string): Promise<Elo> {
         this.log.info('Find one rating');
-        return this.eloRepository.findOne({ username, game });
+        let elo = await this.eloRepository.findOne({ username, game });
+        if (!elo) {
+            elo = new Elo(username, game);
+            this.create(elo);
+        }
+        return elo;
     }
 
     public find(): Promise<Elo[]> {
@@ -31,8 +35,14 @@ export class EloService {
         return this.eloRepository.find({ where: { username: user.username }});
     }
 
-    public findByGame(game: Game): Promise<Elo[]> {
-        return this.eloRepository.find({ where: { game: game.name }});
+    public findByGame(game: string): Promise<Elo[]> {
+        const options: any = {
+            where: { game },
+            order: {
+                elo: 'DESC',
+            },
+        };
+        return this.eloRepository.find(options);
     }
 
     public async create(elo: Elo): Promise<Elo> {
@@ -46,10 +56,25 @@ export class EloService {
         return await this.eloRepository.save(elo);
     }
 
-    public async victory(eloWinner: Elo, eloLoser: Elo): Promise<boolean> {
+    public async adjust(game: string, player1: string, player2: string, draw: boolean = false): Promise<Record<string, number>> {
+        const player1Elo = await this.findOne(player1, game);
+        const player2Elo = await this.findOne(player2, game);
 
-        // get and adjust the two ratings accordingly
+        if (draw) {
+            player1Elo.elo += Math.floor((player2Elo.elo - player1Elo.elo) / 10);
+            player2Elo.elo += Math.floor((player1Elo.elo - player2Elo.elo) / 10);
+        } else {
+            player1Elo.elo += 10;
+            player2Elo.elo -= 10;
+        }
 
-        return true;
+        await this.eloRepository.save(player1Elo);
+        await this.eloRepository.save(player2Elo);
+
+        const result: Record<string, number> = {};
+        result[player1] = player1Elo.elo;
+        result[player2] = player2Elo.elo;
+        return result;
     }
+
 }

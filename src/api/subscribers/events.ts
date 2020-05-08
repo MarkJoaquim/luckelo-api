@@ -13,4 +13,7 @@ export const events = {
     game: {
         created: 'onGameCreate',
     },
+    diceMatch: {
+        created: 'onDiceMatchCreate',
+    },
 };

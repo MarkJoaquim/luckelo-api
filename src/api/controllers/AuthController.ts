@@ -8,20 +8,22 @@ import { Logger, LoggerInterface } from '../../decorators/Logger';
 
 import { User } from '../models/User';
 import { UserService } from '../services/UserService';
+import { InvalidAuthError } from '../errors/InvalidAuthError';
 
-class BaseUser {
+class LoginBody {
     @IsNotEmpty()
     public username: string;
-}
 
-class LoginBody extends BaseUser {
     @IsNotEmpty()
     public password: string;
 }
 
-class UserResponse extends BaseUser {
+class UserResponse {
     @IsNotEmpty()
-    public token: string;
+    public token: AuthJwtPayload;
+
+    @IsNotEmpty()
+    public signed: string;
 }
 
 @JsonController('/auth')
@@ -33,15 +35,20 @@ export class UserController {
         @Logger(__filename) private log: LoggerInterface
     ) { }
 
-    @Post()
+    @Post('/login')
     @ResponseSchema(UserResponse)
     @OnUndefined(404)
     public async login(@Body({ required: true }) body: LoginBody): Promise<UserResponse> {
+        this.log.info('Body', body);
+
         if (await this.userService.validate(body.username, body.password)) {
             return this.createUserResponse(body.username);
+        } else if (await this.userService.findOne(body.username)) {
+            this.log.info('Bad password, existing username');
+            throw new InvalidAuthError();
         }
-        this.log.info('failed to validate user');
 
+        this.log.info('Username does not exist');
         return undefined;
     }
 
@@ -58,13 +65,13 @@ export class UserController {
 
     private createUserResponse(username: string): UserResponse {
         const userResponse = new UserResponse();
-        userResponse.username = username;
 
         const payload: AuthJwtPayload = {
             name: username,
             exp: 9999999999999,
         };
-        userResponse.token = sign(payload, env.app.jwtSecret);
+        userResponse.token = payload;
+        userResponse.signed = sign(payload, env.app.jwtSecret);
 
         return userResponse;
     }

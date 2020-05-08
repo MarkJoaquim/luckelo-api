@@ -3,8 +3,12 @@ import { JsonController, Authorized, Get, Param } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { GameService } from '../services/GameService';
+import { EloService } from '../services/EloService';
+import { MatchService } from '../services/MatchService';
 import { Game } from '../models/Game';
 import { User } from '../models/User';
+import { Elo } from '../models/Elo';
+import { Match } from '../models/Match';
 
 class BaseGame {
     @IsNotEmpty()
@@ -21,7 +25,9 @@ class UserGame extends BaseGame {
 export class GameController {
 
     constructor(
-        private gameService: GameService
+        private gameService: GameService,
+        private eloService: EloService,
+        private matchService: MatchService
     ) { }
 
     // Make this faster by starting with Elos...
@@ -44,5 +50,31 @@ export class GameController {
         }
 
         return userGames;
+    }
+
+    @Get('/:game/leaderboard')
+    @ResponseSchema(Elo, { isArray: true})
+    public async leaderboardForGame(@Param('game') game: string): Promise<Elo[]> {
+        return await this.eloService.findByGame(game);
+    }
+
+    @Get('/dice/match-history/:user')
+    @ResponseSchema(Match, { isArray: true})
+    public async diceMatchHistory(@Param('user') username: string): Promise<Match[]> {
+        return await this.matchService.matchHistory('dice', username);
+    }
+
+    @Get('/dice/match-history/:user/:opponent')
+    @ResponseSchema(Match, { isArray: true})
+    public async diceMatchHistoryWithOpponent(
+        @Param('user') user: string,
+        @Param('opponent') opponent: string): Promise<Match[]> {
+        return await this.matchService.matchHistoryBetween('dice', user, opponent);
+    }
+
+    @Get('/dice/active')
+    @ResponseSchema(Match, { isArray: true})
+    public async diceActiveMatches(): Promise<Match[]> {
+        return await this.matchService.findActive();
     }
 }

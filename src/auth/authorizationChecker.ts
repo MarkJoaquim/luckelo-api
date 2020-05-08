@@ -10,11 +10,14 @@ export function authorizationChecker(connection: Connection): (action: Action, r
     return async function innerAuthorizationChecker(action: Action, roles: string[]): Promise<boolean> {
 
         try {
-            const authorization = action.request.header('authorization');
-            const jwtPayload = verify(authorization, env.app.jwtSecret) as AuthJwtPayload;
-            if (authorization && jwtPayload) {
-                action.request.username = jwtPayload.name;
-                return true;
+            const authorization: string = action.request.header('Authorization');
+            if (authorization && authorization.startsWith('Bearer ')) {
+                const token: string = authorization.split('Bearer ')[1];
+                const jwtPayload = verify(token, env.app.jwtSecret) as AuthJwtPayload;
+                if (jwtPayload) {
+                    action.request.username = jwtPayload.name;
+                    return true;
+                }
             }
         } catch (err) {
             return false;

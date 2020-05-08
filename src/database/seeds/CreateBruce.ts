@@ -11,17 +11,19 @@ export class CreateBruce implements Seed {
         const em = connection.createEntityManager();
 
         const user = new User();
-        user.username = 'bruce';
-        user.password = '1234';
+        user.username = 'brucey';
+        user.password = '123456';
         await em.save(user);
 
         const game = new Game();
-        game.name = 'Er';
+        game.name = 'Ur';
         await em.save(game);
 
-        const elo = new Elo();
-        elo.username = 'bruce';
-        elo.game = 'Er';
+        const diceGame = new Game();
+        diceGame.name = 'Dice';
+        await em.save(diceGame);
+
+        const elo = new Elo('brucey', 'Ur');
         elo.elo = 1200;
         user.elos = [elo];
         game.elos = [elo];

@@ -6,7 +6,7 @@ import { Game } from '../../../src/api/models/Game';
 export class CreateGames implements Seed {
 
     public async seed(factory: Factory, connection: Connection): Promise<any> {
-        await factory(Game)().seedMany(10);
+        await factory(Game)().seed();
     }
 
 }

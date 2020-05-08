@@ -25,6 +25,12 @@ export class Elo {
     @JoinColumn({ name: 'username' })
     public userObject: User;
 
+    constructor(username: string, game: string) {
+        this.username = username;
+        this.game = game;
+        this.elo = 1200;
+    }
+
     public toString(): string {
         return this.game + ': ' + this.username + ' ' + this.elo;
     }
