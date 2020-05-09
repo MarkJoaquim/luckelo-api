@@ -23,7 +23,7 @@ export class GameResolver {
 
     @FieldResolver(type => [Elo])
     public async elos(@Root() game: GameModel): Promise<any> {
-        return this.eloService.findByGame(game);
+        return this.eloService.findByGame(game.name);
     }
 
 }

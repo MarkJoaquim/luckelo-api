@@ -14,7 +14,6 @@ import { publicLoader } from './loaders/publicLoader';
 import { swaggerLoader } from './loaders/swaggerLoader';
 import { typeormLoader } from './loaders/typeormLoader';
 import { winstonLoader } from './loaders/winstonLoader';
-import { socketLoader } from './loaders/socketLoader';
 
 const log = new Logger(__filename);
 
@@ -25,7 +24,6 @@ bootstrapMicroframework({
         eventDispatchLoader,
         typeormLoader,
         expressLoader,
-        socketLoader,
         swaggerLoader,
         monitorLoader,
         homeLoader,

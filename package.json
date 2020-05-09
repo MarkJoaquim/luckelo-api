@@ -12,7 +12,7 @@
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js"
   },
   "engines": {
-    "node": ">=8.0.0"
+    "node": "10.20.1"
   },
   "author": "Mark Joaquim",
   "dependencies": {
@@ -48,6 +48,7 @@
     "nps-utils": "^1.5.0",
     "pg": "^7.4.3",
     "reflect-metadata": "^0.1.10",
+    "request": "^2.87.0",
     "routing-controllers": "^0.7.6",
     "routing-controllers-openapi": "^1.7.0",
     "serve-favicon": "^2.4.5",
@@ -56,11 +57,12 @@
     "supertest": "^3.0.0",
     "swagger-ui-express": "4.0.1",
     "ts-node": "7.0.1",
+    "tsconfig-paths": "^3.9.0",
     "tslint": "^5.8.0",
     "type-graphql": "^0.15.0",
     "typedi": "0.8.0",
     "typeorm": "^0.2.5",
-    "typeorm-seeding": "^1.0.0-beta.6",
+    "typeorm-seeding": "^1.6.1",
     "typeorm-typedi-extensions": "^0.2.1",
     "typescript": "^3.6.3",
     "uuid": "^3.3.2",
@@ -115,7 +117,6 @@
     "ncp": "^2.0.0",
     "nock": "10.0.0",
     "sqlite3": "^4.0.0",
-    "ts-jest": "23.10.1",
-    "tsconfig-paths": "^3.9.0"
+    "ts-jest": "23.10.1"
   }
 }
