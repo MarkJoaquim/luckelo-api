@@ -13,6 +13,7 @@ export class DiceService {
     public timeouts: Record<string, NodeJS.Timeout[]> = {};
     private TURN_TIME_LIMIT = 30000;
     private WARNING_TIME = 5000;
+    private gameName = 'Dice';
 
     constructor(
         public randomService: RandomService,
@@ -30,7 +31,7 @@ export class DiceService {
             dicePlayer.initialElo = player.elo;
             return dicePlayer;
         });
-        match.gameName = 'dice';
+        match.gameName = this.gameName;
         this.log.info(JSON.stringify(match));
         return await this.matchService.createInNewRoom(match);
     }
@@ -91,15 +92,15 @@ export class DiceService {
         if (p1.roll === p2.roll) {
             p1.outcome = 'Draw';
             p2.outcome = 'Draw';
-            newElos = await this.eloService.adjust('dice', p1.username, p2.username, true);
+            newElos = await this.eloService.adjust(this.gameName, p1.username, p2.username, true);
         } else if (p1.roll > p2.roll) {
             p1.outcome = 'Victory';
             p2.outcome = 'Defeat';
-            newElos = await this.eloService.adjust('dice', p1.username, p2.username);
+            newElos = await this.eloService.adjust(this.gameName, p1.username, p2.username);
         } else {
             p1.outcome = 'Defeat';
             p2.outcome = 'Victory';
-            newElos = await this.eloService.adjust('dice', p2.username, p1.username);
+            newElos = await this.eloService.adjust(this.gameName, p2.username, p1.username);
         }
 
         p1.finalElo = newElos[p1.username];
@@ -127,7 +128,7 @@ export class DiceService {
                 dicePlayer.initialElo = player.finalElo;
                 return dicePlayer;
             });
-            newMatch.gameName = 'dice';
+            newMatch.gameName = this.gameName;
             newMatch = await this.matchService.createInExistingRoom(room, newMatch);
 
             io.to(room).emit('dice newMatch', newMatch);

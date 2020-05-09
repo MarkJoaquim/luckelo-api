@@ -1,13 +1,13 @@
 import { Connection } from 'typeorm';
-import { Factory, Seed } from 'typeorm-seeding';
+import { Factory, Seeder } from 'typeorm-seeding';
 
 import { User } from '../../../src/api/models/User';
 import { Elo } from '../../../src/api/models/Elo';
 import { Game } from '../../../src/api/models/Game';
 
-export class CreateBruce implements Seed {
+export class CreateBruce implements Seeder {
 
-    public async seed(factory: Factory, connection: Connection): Promise<User> {
+    public async run(factory: Factory, connection: Connection): Promise<void> {
         const em = connection.createEntityManager();
 
         const user = new User();
@@ -28,7 +28,6 @@ export class CreateBruce implements Seed {
         user.elos = [elo];
         game.elos = [elo];
         await em.save(elo);
-        return user;
     }
 
 }

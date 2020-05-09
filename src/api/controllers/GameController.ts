@@ -58,10 +58,10 @@ export class GameController {
         return await this.eloService.findByGame(game);
     }
 
-    @Get('/dice/match-history/:user')
+    @Get('/:game/match-history/:user')
     @ResponseSchema(Match, { isArray: true})
-    public async diceMatchHistory(@Param('user') username: string): Promise<Match[]> {
-        return await this.matchService.matchHistory('dice', username);
+    public async diceMatchHistory(@Param('game') game: string, @Param('user') username: string): Promise<Match[]> {
+        return await this.matchService.matchHistory(game, username);
     }
 
     @Get('/dice/match-history/:user/:opponent')

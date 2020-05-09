@@ -38,18 +38,24 @@ export class UserController {
     @Post('/login')
     @ResponseSchema(UserResponse)
     @OnUndefined(404)
-    public async login(@Body({ required: true }) body: LoginBody): Promise<UserResponse> {
+    public async loginOrCreate(@Body({ required: true }) body: LoginBody): Promise<UserResponse> {
         this.log.info('Body', body);
 
         if (await this.userService.validate(body.username, body.password)) {
             return this.createUserResponse(body.username);
-        } else if (await this.userService.findOne(body.username)) {
+        }
+
+        try {
+            const user = new User();
+            user.password = body.password;
+            user.username = body.username;
+            await this.userService.create(user);
+
+            return this.createUserResponse(body.username);
+        } catch (err) {
             this.log.info('Bad password, existing username');
             throw new InvalidAuthError();
         }
-
-        this.log.info('Username does not exist');
-        return undefined;
     }
 
     @Post('/create')
