@@ -66,6 +66,7 @@ export class MatchService {
                         .getQuery();
                     return 'match.id IN ' + sq;
                 })
+                .orderBy('match.created', 'DESC')
                 .getMany();
         }
         return undefined;
