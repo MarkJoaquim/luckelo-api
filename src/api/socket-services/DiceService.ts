@@ -112,6 +112,18 @@ export class DiceService {
     public async requestRematch(io: any, username: string, room: string): Promise<void> {
         const match = await this.matchService.findByRoom(room);
 
+        // Only allow a rematch if all players are connected.
+        const notConnectedPlayer = match.dicePlayers.find(player => {
+            // Find a player who doesn't have a connected socket in the room.
+            const connectedSocket = Object.values(io.sockets.connected).find((socket: any) =>
+                socket.user === player.username && socket.rooms[room] !== undefined);
+            return connectedSocket === undefined;
+        });
+        // If any players aren't in the room, don't allow the rematch Request.
+        if (notConnectedPlayer !== undefined) {
+            return;
+        }
+
         match.dicePlayers.forEach(player => {
             if (player.username === username) {
                 player.rematchRequested = true;

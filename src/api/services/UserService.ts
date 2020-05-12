@@ -7,6 +7,7 @@ import { User } from '../models/User';
 import { UserRepository } from '../repositories/UserRepository';
 import { events } from '../subscribers/events';
 import { UsernameTakenError } from '../errors/UsernameTakenError';
+import { UserNotFoundError } from '../errors/UserNotFoundError';
 
 @Service()
 export class UserService {
@@ -32,7 +33,7 @@ export class UserService {
             return await User.comparePassword(user, password);
         }
 
-        return false;
+        throw new UserNotFoundError();
     }
 
     public async create(user: User): Promise<User> {

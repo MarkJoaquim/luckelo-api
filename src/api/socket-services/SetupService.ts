@@ -5,10 +5,14 @@ export class SetupService {
     public connections: Record<string, string> = {};
 
     public connect(username: string, socketId: string): string {
-        return this.connections[username];
+        const oldSocketId = this.connections[username];
+
+        this.connections[username] = socketId;
+
+        return oldSocketId;
     }
 
-    public disconnect(username: string, socketId: string): void {
+    public disconnect(username: string): void {
         this.connections[username] = undefined;
     }
 }

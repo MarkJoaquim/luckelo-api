@@ -42,6 +42,18 @@ export const expressLoader: MicroframeworkLoader = (settings: MicroframeworkSett
             settings.setData('express_server', server);
 
             const io = socketIO(server);
+
+            // Need to define disconnecting actions here because the rooms are gone by the time the controller method is run
+            // Probably an issue with socket-controllers
+            io.on('connect', (socket) => {
+                socket.on('disconnecting', (reason) => {
+                    const rooms = Object.keys(socket.rooms);
+                    rooms.map(room => {
+                        io.to(room).emit('leftRoom', { username: (socket as any).user });
+                    });
+                });
+            });
+
             const expressStatusMonitor = require('express-status-monitor');
             expressApp.use(expressStatusMonitor({
               websocket: io,

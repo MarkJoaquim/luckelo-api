@@ -1,5 +1,5 @@
 import { IsNotEmpty } from 'class-validator';
-import { Body, JsonController, Post, OnUndefined } from 'routing-controllers';
+import { Body, JsonController, Post } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { sign } from 'jsonwebtoken';
 import { AuthJwtPayload } from '../../auth/AuthJwt';
@@ -37,25 +37,22 @@ export class UserController {
 
     @Post('/login')
     @ResponseSchema(UserResponse)
-    @OnUndefined(404)
     public async loginOrCreate(@Body({ required: true }) body: LoginBody): Promise<UserResponse> {
-        this.log.info('Body', body);
-
-        if (await this.userService.validate(body.username, body.password)) {
-            return this.createUserResponse(body.username);
-        }
-
         try {
+            if (await this.userService.validate(body.username, body.password)) {
+                return this.createUserResponse(body.username);
+            }
+        } catch (err) {
             const user = new User();
             user.password = body.password;
             user.username = body.username;
             await this.userService.create(user);
 
             return this.createUserResponse(body.username);
-        } catch (err) {
-            this.log.info('Bad password, existing username');
-            throw new InvalidAuthError();
         }
+
+        this.log.info('Bad password, existing username');
+        throw new InvalidAuthError();
     }
 
     @Post('/create')

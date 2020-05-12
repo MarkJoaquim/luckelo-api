@@ -4,11 +4,11 @@ import { OrmRepository } from 'typeorm-typedi-extensions';
 import { MatchRepository } from '../repositories/MatchRepository';
 import { Match } from '../models/Match';
 import { nanoid } from 'nanoid/non-secure';
-import { UpdateResult } from 'typeorm';
 import { RoomRepository } from '../repositories/RoomRepository';
 import { Room } from '../models/Room';
 import { Logger, LoggerInterface } from '../../decorators/Logger';
 import { DicePlayerRepository } from '../repositories/DicePlayerRepository';
+import { In } from 'typeorm';
 
 @Service()
 export class MatchService {
@@ -28,23 +28,19 @@ export class MatchService {
         return await this.roomRepository.find();
     }
 
+    public async findRoomsInList(rooms: string[]): Promise<Room[]> {
+        return await this.roomRepository.find({
+            relations: ['match', 'match.dicePlayers'],
+            where: { room: In(rooms) },
+        });
+    }
+
     public async findByRoom(room: string): Promise<Match> {
         try {
             return (await this.roomRepository.findOne(room, {
                 relations: ['match', 'match.dicePlayers'],
                 order: { matchId: 'DESC' },
             })).match;
-                // .createQueryBuilder('room')
-                // .leftJoinAndSelect('room.match', 'match')
-                // .leftJoinAndSelect('match.dicePlayers', 'player')
-                // .where('room.room = :room', { room })
-                // .orderBy('match.id', 'DESC')
-                // .getOne()).match;
-            // return (await getManager()
-            //     .createQueryBuilder(Match, 'match')
-            //     .leftJoinAndSelect(DicePlayer, 'dice_player', 'dice_player.matchId = match.id')
-            //     .orderBy('match.id', 'DESC')
-            //     .getOne());
         } catch (err) {
             this.log.error(err);
         }
@@ -100,7 +96,6 @@ export class MatchService {
             .where('room.room = :room', { room })
             .andWhere('player.outcome is null')
             .getOne();
-        this.log.info(JSON.stringify(diceRoom));
 
         return diceRoom ? diceRoom.match : undefined;
     }
@@ -135,11 +130,18 @@ export class MatchService {
         return createdMatch;
     }
 
-    public async update(match: Match): Promise<UpdateResult> {
-        match.dicePlayers.forEach(player => {
+    public async update(match: Match): Promise<Match> {
+        const matchCopy = { ...match };
+
+        matchCopy.dicePlayers.forEach(player => {
             this.dicePlayerRepository.save(player);
         });
-        return await this.matchRepository.update(match.id, match);
+
+        // Have to delete the relation or else it tries to save it and fails.
+        delete matchCopy.dicePlayers;
+        await this.matchRepository.update(matchCopy.id, matchCopy);
+
+        return match;
     }
 
 }
