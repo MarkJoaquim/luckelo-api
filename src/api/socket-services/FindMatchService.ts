@@ -31,8 +31,8 @@ export class FindMatchService {
         };
     }
 
-    public stopSearching(username: string, game: string): void {
-        this.matchMaking = this.matchMaking.filter((inquiry) => inquiry.player.username !== username && inquiry.game !== game);
+    public stopSearching(username: string, game?: string): void {
+        this.matchMaking = this.matchMaking.filter((inquiry) => inquiry.player.username !== username && (!game || inquiry.game !== game));
     }
 
     private findBestMatch(inquiry: MatchInquiry): MatchInquiry {

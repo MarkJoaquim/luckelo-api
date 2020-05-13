@@ -1,7 +1,7 @@
 import { IsNotEmpty } from 'class-validator';
 import { Entity, ManyToOne, JoinColumn, Column, PrimaryColumn } from 'typeorm';
 import { User } from './User';
-import { Match } from './Match';
+import { DiceMatch } from './DiceMatch';
 
 @Entity()
 export class DicePlayer {
@@ -31,7 +31,7 @@ export class DicePlayer {
     @JoinColumn({ name: 'username' })
     public user: User;
 
-    @ManyToOne(type => Match, match => match.dicePlayers)
+    @ManyToOne(type => DiceMatch, match => match.players)
     @JoinColumn({ name: 'matchId' })
-    public match: Match;
+    public match: DiceMatch;
 }

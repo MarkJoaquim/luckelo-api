@@ -4,11 +4,11 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { GameService } from '../services/GameService';
 import { EloService } from '../services/EloService';
-import { MatchService } from '../services/MatchService';
+import { DiceMatchService } from '../services/DiceMatchService';
 import { Game } from '../models/Game';
 import { User } from '../models/User';
 import { Elo } from '../models/Elo';
-import { Match } from '../models/Match';
+import { DiceMatch } from '../models/DiceMatch';
 
 class BaseGame {
     @IsNotEmpty()
@@ -27,7 +27,7 @@ export class GameController {
     constructor(
         private gameService: GameService,
         private eloService: EloService,
-        private matchService: MatchService
+        private diceMatchService: DiceMatchService
     ) { }
 
     // Make this faster by starting with Elos...
@@ -59,22 +59,22 @@ export class GameController {
     }
 
     @Get('/:game/match-history/:user')
-    @ResponseSchema(Match, { isArray: true})
-    public async diceMatchHistory(@Param('game') game: string, @Param('user') username: string): Promise<Match[]> {
-        return await this.matchService.matchHistory(game, username);
+    @ResponseSchema(DiceMatch, { isArray: true})
+    public async diceMatchHistory(@Param('game') game: string, @Param('user') username: string): Promise<DiceMatch[]> {
+        return await this.diceMatchService.matchHistory(game, username);
     }
 
     @Get('/dice/match-history/:user/:opponent')
-    @ResponseSchema(Match, { isArray: true})
+    @ResponseSchema(DiceMatch, { isArray: true})
     public async diceMatchHistoryWithOpponent(
         @Param('user') user: string,
-        @Param('opponent') opponent: string): Promise<Match[]> {
-        return await this.matchService.matchHistoryBetween('dice', user, opponent);
+        @Param('opponent') opponent: string): Promise<DiceMatch[]> {
+        return await this.diceMatchService.matchHistoryBetween('dice', user, opponent);
     }
 
     @Get('/dice/active')
-    @ResponseSchema(Match, { isArray: true})
-    public async diceActiveMatches(): Promise<Match[]> {
-        return await this.matchService.findActive();
+    @ResponseSchema(DiceMatch, { isArray: true})
+    public async diceActiveMatches(): Promise<DiceMatch[]> {
+        return await this.diceMatchService.findActive();
     }
 }

@@ -4,12 +4,16 @@ import { Game } from './Game';
 import { DicePlayer } from './DicePlayer';
 
 @Entity()
-export class Match {
+export class DiceMatch {
     @PrimaryGeneratedColumn()
     public id: number;
 
     @CreateDateColumn()
     public created: Date;
+
+    @Column()
+    @IsNotEmpty()
+    public room: string;
 
     @Column()
     @IsNotEmpty()
@@ -20,5 +24,5 @@ export class Match {
     public game: Game;
 
     @OneToMany(type => DicePlayer, player => player.match)
-    public dicePlayers: DicePlayer[];
+    public players: DicePlayer[];
 }

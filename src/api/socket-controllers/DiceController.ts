@@ -23,12 +23,10 @@ export class DiceController {
 
         const spectators: string[] = [];
         Object.values(io.sockets.connected).map(skt => {
-            this.log.info(JSON.stringify(skt.rooms));
             if (skt.rooms[message.room]) {
                 spectators.push((skt as any).user);
             }
         });
-        this.log.info(JSON.stringify(spectators));
         socket.emit('dice spectators', { list: spectators });
     }
 

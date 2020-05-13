@@ -1,14 +1,14 @@
 import { SocketController, OnConnect, OnDisconnect, ConnectedSocket, SocketIO, OnMessage, MessageBody } from 'socket-controllers';
 import { SetupService } from '../socket-services';
 import { Server } from 'socket.io';
-import { MatchService } from '../services/MatchService';
+import { DiceMatchService } from '../services/DiceMatchService';
 
 @SocketController()
 export class FindMatchController {
 
     constructor(
         public setupService: SetupService,
-        public matchService: MatchService
+        public diceMatchService: DiceMatchService
         ) {}
 
     @OnConnect()
@@ -42,6 +42,6 @@ export class FindMatchController {
             roomsWithConnectedSockets.push(...Object.values(skt.rooms).filter(room => room !== skt.id));
         });
 
-        socket.emit('activeRooms', await this.matchService.findRoomsInList(roomsWithConnectedSockets));
+        socket.emit('activeRooms', await this.diceMatchService.findRoomsInList(roomsWithConnectedSockets));
     }
 }

@@ -2,8 +2,8 @@ import { Service } from 'typedi';
 import { MatchDetails } from '../socket-controllers/interfaces';
 import { RandomService } from '../services/RandomService';
 import { EloService } from '../services/EloService';
-import { MatchService } from '../services/MatchService';
-import { Match } from '../models/Match';
+import { DiceMatchService } from '../services/DiceMatchService';
+import { DiceMatch } from '../models/DiceMatch';
 import { Logger, LoggerInterface } from '../../../src/decorators/Logger';
 import { DicePlayer } from '../models/DicePlayer';
 
@@ -18,14 +18,14 @@ export class DiceService {
     constructor(
         public randomService: RandomService,
         public eloService: EloService,
-        public matchService: MatchService,
+        public diceMatchService: DiceMatchService,
         @Logger(__filename) private log: LoggerInterface) {
             this.randomService.getRandomNumbers(1, 6, 6).then(rolls => this.rolls.push(...rolls));
         }
 
     public async createGame(matchDetails: MatchDetails): Promise<string> {
-        const match = new Match();
-        match.dicePlayers = matchDetails.players.map(player => {
+        const match = new DiceMatch();
+        match.players = matchDetails.players.map(player => {
             const dicePlayer = new DicePlayer();
             dicePlayer.username = player.username;
             dicePlayer.initialElo = player.elo;
@@ -33,18 +33,18 @@ export class DiceService {
         });
         match.gameName = this.gameName;
         this.log.info(JSON.stringify(match));
-        return await this.matchService.createInNewRoom(match);
+        return await this.diceMatchService.createInNewRoom(match);
     }
 
-    public async getMatch(room: string): Promise<Match> {
-        return await this.matchService.findByRoom(room);
+    public async getMatch(room: string): Promise<DiceMatch> {
+        return await this.diceMatchService.findByRoom(room);
     }
 
     public async roll(io: any, username: string, room: string): Promise<void> {
-        let match: Match = await this.matchService.findActiveByRoom(room);
+        let match: DiceMatch = await this.diceMatchService.findActiveByRoom(room);
 
         let diceRollResult;
-        match.dicePlayers.forEach(player => {
+        match.players.forEach(player => {
             if (player.username === username && !player.roll) {
                 player.roll = this.rolls.pop();
                 diceRollResult = { username, roll: player.roll };
@@ -61,7 +61,7 @@ export class DiceService {
             io.to(room).emit('dice rollResult', diceRollResult);
 
             // TODO: better way of assuring this match wasn't already completed.
-            if (match.dicePlayers.findIndex(player => !player.roll) === -1) {
+            if (match.players.findIndex(player => !player.roll) === -1) {
                 match = await this.gameOver(match);
                 io.to(room).emit('dice match', match);
             } else {
@@ -76,7 +76,7 @@ export class DiceService {
                 }
             }
 
-            this.matchService.update(match);
+            this.diceMatchService.update(match);
 
             if (this.rolls.length < 3) {
                 this.rolls.push(...await this.randomService.getRandomNumbers(1, 6, 6));
@@ -84,9 +84,9 @@ export class DiceService {
         }
     }
 
-    public async gameOver(match: Match): Promise<Match> {
-        const p1 = match.dicePlayers[0];
-        const p2 = match.dicePlayers[1];
+    public async gameOver(match: DiceMatch): Promise<DiceMatch> {
+        const p1 = match.players[0];
+        const p2 = match.players[1];
 
         let newElos;
         if (p1.roll === p2.roll) {
@@ -110,10 +110,10 @@ export class DiceService {
     }
 
     public async requestRematch(io: any, username: string, room: string): Promise<void> {
-        const match = await this.matchService.findByRoom(room);
+        const match = await this.diceMatchService.findByRoom(room);
 
         // Only allow a rematch if all players are connected.
-        const notConnectedPlayer = match.dicePlayers.find(player => {
+        const notConnectedPlayer = match.players.find(player => {
             // Find a player who doesn't have a connected socket in the room.
             const connectedSocket = Object.values(io.sockets.connected).find((socket: any) =>
                 socket.user === player.username && socket.rooms[room] !== undefined);
@@ -124,24 +124,24 @@ export class DiceService {
             return;
         }
 
-        match.dicePlayers.forEach(player => {
+        match.players.forEach(player => {
             if (player.username === username) {
                 player.rematchRequested = true;
             }
         });
 
-        this.matchService.update(match);
+        this.diceMatchService.update(match);
 
-        if (match.dicePlayers.find(player => !player.rematchRequested) === undefined) {
-            let newMatch = new Match();
-            newMatch.dicePlayers = match.dicePlayers.map(player => {
+        if (match.players.find(player => !player.rematchRequested) === undefined) {
+            let newMatch = new DiceMatch();
+            newMatch.players = match.players.map(player => {
                 const dicePlayer = new DicePlayer();
                 dicePlayer.username = player.username;
                 dicePlayer.initialElo = player.finalElo;
                 return dicePlayer;
             });
             newMatch.gameName = this.gameName;
-            newMatch = await this.matchService.createInExistingRoom(room, newMatch);
+            newMatch = await this.diceMatchService.createInExistingRoom(room, newMatch);
 
             io.to(room).emit('dice newMatch', newMatch);
         } else {
@@ -154,12 +154,12 @@ export class DiceService {
     }
 
     public async forceEnd(io: any, room: string): Promise<void> {
-        let match: Match = await this.matchService.findByRoom(room);
+        let match: DiceMatch = await this.diceMatchService.findByRoom(room);
 
         match = await this.gameOver(match);
 
         io.to(room).emit('dice match', match);
 
-        await this.matchService.update(match);
+        await this.diceMatchService.update(match);
     }
 }
