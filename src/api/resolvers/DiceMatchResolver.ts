@@ -6,7 +6,7 @@ import { DiceMatch } from '../types/DiceMatch';
 
 @Service()
 @Resolver(of => DiceMatch)
-export class MatchResolver {
+export class DiceMatchResolver {
 
     constructor(
         private diceMatchService: DiceMatchService

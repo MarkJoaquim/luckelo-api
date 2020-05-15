@@ -1,5 +1,5 @@
 import { SocketController, OnMessage, ConnectedSocket, MessageBody, SocketIO } from 'socket-controllers';
-import { DiceService } from '../socket-services';
+import { UrService } from '../socket-services';
 import { Logger, LoggerInterface } from '../../decorators/Logger';
 import { Server } from 'socket.io';
 
@@ -7,19 +7,19 @@ import { Server } from 'socket.io';
 export class DiceController {
 
     constructor(
-        public diceService: DiceService,
+        public urService: UrService,
         @Logger(__filename) private log: LoggerInterface) {
     }
 
-    @OnMessage('dice getMatch')
+    @OnMessage('ur getMatch')
     public async getMatch(@SocketIO() io: Server, @ConnectedSocket() socket: any, @MessageBody() message: any): Promise<void> {
-        const match = await this.diceService.getMatch(message.room);
+        const match = await this.urService.getMatch(message.room);
         if (match !== undefined) {
             socket.to(message.room).emit('joinedRoom', { username: socket.user });
             socket.join(message.room);
         }
         this.log.info(`${JSON.stringify(match)}`);
-        socket.emit('dice match', match);
+        socket.emit('ur match', match);
 
         const spectators: string[] = [];
         Object.values(io.sockets.connected).map(skt => {
@@ -27,19 +27,19 @@ export class DiceController {
                 spectators.push((skt as any).user);
             }
         });
-        socket.emit('dice spectators', { list: spectators });
+        socket.emit('ur spectators', { list: spectators });
     }
 
-    @OnMessage('dice roll')
+    @OnMessage('ur move')
     public roll(@SocketIO() io: any, @ConnectedSocket() socket: any, @MessageBody() message: any): void {
-        this.log.info(`roll received from ${socket.user}`);
-        this.diceService.roll(io, socket.user, message.room);
+        this.log.info(`move received from ${socket.user}`);
+        this.urService.move(io, socket.user, message.room, message.move);
     }
 
-    @OnMessage('dice requestRematch')
+    @OnMessage('ur requestRematch')
     public requestRematch(@SocketIO() io: any, @ConnectedSocket() socket: any, @MessageBody() message: any): void {
         this.log.info(`rematch request received from ${socket.user}`);
 
-        this.diceService.requestRematch(io, socket.user, message.room);
+        this.urService.requestRematch(io, socket.user, message.room);
     }
 }

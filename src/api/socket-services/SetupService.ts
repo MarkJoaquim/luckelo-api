@@ -5,7 +5,7 @@ import { FindMatchService } from './FindMatchService';
 export class SetupService {
     public connections: Record<string, string> = {};
 
-    constructor (public findMatchService: FindMatchService) {}
+    constructor(public findMatchService: FindMatchService) {}
 
     public connect(username: string, socketId: string): string {
         const oldSocketId = this.connections[username];

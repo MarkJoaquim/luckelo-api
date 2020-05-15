@@ -1,5 +1,5 @@
 import { SocketController, ConnectedSocket, OnMessage, MessageBody, SocketIO } from 'socket-controllers';
-import { FindMatchService, DiceService } from '../socket-services';
+import { FindMatchService, DiceService, UrService } from '../socket-services';
 import { MatchSearch, MatchDetails } from './interfaces';
 import { Logger, LoggerInterface } from '../../decorators/Logger';
 import { EloService } from '../services/EloService';
@@ -10,6 +10,7 @@ export class FindMatchController {
     constructor(
         public findMatchService: FindMatchService,
         public diceService: DiceService,
+        public urService: UrService,
         public eloService: EloService,
         @Logger(__filename) private log: LoggerInterface
         ) {}
@@ -22,7 +23,6 @@ export class FindMatchController {
         const match = this.findMatchService.findMatch(socket.user, socket.id, message.game, elo.elo);
         this.log.info(`Match: ${JSON.stringify(match)}`);
         if (!match) {
-            socket.emit('noMatches');
             return;
         }
 
@@ -42,6 +42,8 @@ export class FindMatchController {
     private async createMatch(match: MatchDetails): Promise<string> {
         if (match.game.toLowerCase() === 'dice') {
             return await this.diceService.createGame(match);
+        } else if (match.game.toLowerCase() === 'ur') {
+            return await this.urService.createGame(match);
         }
 
         return undefined;
