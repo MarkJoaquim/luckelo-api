@@ -45,38 +45,32 @@ export class DiceMatchService {
         });
     }
 
-    public async matchHistory(game: string, username: string): Promise<DiceMatch[]> {
-        if (game.toLowerCase() === 'dice') {
-            return await this.diceMatchRepository
-                .createQueryBuilder('match')
-                .leftJoinAndSelect('match.players', 'player')
-                .where(qb => {
-                    const sq = qb.subQuery()
-                        .select('match.id')
-                        .from(DiceMatch, 'match')
-                        .leftJoin('match.players', 'player')
-                        .where('player.username = :username', { username })
-                        .andWhere('player.outcome is not null')
-                        .getQuery();
-                    return 'match.id IN ' + sq;
-                })
-                .orderBy('match.created', 'DESC')
-                .getMany();
-        }
-        return undefined;
+    public async matchHistory(username: string): Promise<DiceMatch[]> {
+        return await this.diceMatchRepository
+            .createQueryBuilder('match')
+            .leftJoinAndSelect('match.players', 'player')
+            .where(qb => {
+                const sq = qb.subQuery()
+                    .select('match.id')
+                    .from(DiceMatch, 'match')
+                    .leftJoin('match.players', 'player')
+                    .where('player.username = :username', { username })
+                    .andWhere('player.outcome is not null')
+                    .getQuery();
+                return 'match.id IN ' + sq;
+            })
+            .orderBy('match.created', 'DESC')
+            .getMany();
     }
 
-    public async matchHistoryBetween(game: string, player1: string, player2: string): Promise<DiceMatch[]> {
-        if (game.toLowerCase() === 'dice') {
-            return await this.diceMatchRepository
-                .createQueryBuilder('match')
-                .leftJoinAndSelect('match.players', 'p1')
-                .leftJoinAndSelect('match.players', 'p2')
-                .where('p1.outcome is not null')
-                .andWhere('(p1.username = :p1 AND p2.username = :p2) OR (p1.username = :p2 AND p2.username = :p1)', { p1: player1, p2: player2 })
-                .getMany();
-        }
-        return undefined;
+    public async matchHistoryBetween(player1: string, player2: string): Promise<DiceMatch[]> {
+        return await this.diceMatchRepository
+            .createQueryBuilder('match')
+            .leftJoinAndSelect('match.players', 'p1')
+            .leftJoinAndSelect('match.players', 'p2')
+            .where('p1.outcome is not null')
+            .andWhere('(p1.username = :p1 AND p2.username = :p2) OR (p1.username = :p2 AND p2.username = :p1)', { p1: player1, p2: player2 })
+            .getMany();
     }
 
     public async findActive(): Promise<DiceMatch[]> {

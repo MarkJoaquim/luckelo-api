@@ -143,7 +143,7 @@ export class UrService {
                 match.boardState = state.join('');
 
                 if (this.ROSETTES.has(move)) {
-                    match.player1.roll = this.roll();
+                    match.player2.roll = this.roll();
                 } else {
                     if (p2state[move] === '1') {
                         match.player1.piecesAtStart++;

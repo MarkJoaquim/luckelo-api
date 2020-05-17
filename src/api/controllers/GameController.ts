@@ -9,6 +9,8 @@ import { Game } from '../models/Game';
 import { User } from '../models/User';
 import { Elo } from '../models/Elo';
 import { DiceMatch } from '../models/DiceMatch';
+import { UrMatchService } from '../services/UrMatchService';
+import { UrMatch } from '../models/UrMatch';
 
 class BaseGame {
     @IsNotEmpty()
@@ -27,7 +29,8 @@ export class GameController {
     constructor(
         private gameService: GameService,
         private eloService: EloService,
-        private diceMatchService: DiceMatchService
+        private diceMatchService: DiceMatchService,
+        private urMatchService: UrMatchService
     ) { }
 
     // Make this faster by starting with Elos...
@@ -58,10 +61,16 @@ export class GameController {
         return await this.eloService.findByGame(game);
     }
 
-    @Get('/:game/match-history/:user')
+    @Get('/dice/match-history/:user')
     @ResponseSchema(DiceMatch, { isArray: true})
-    public async diceMatchHistory(@Param('game') game: string, @Param('user') username: string): Promise<DiceMatch[]> {
-        return await this.diceMatchService.matchHistory(game, username);
+    public async diceMatchHistory(@Param('user') username: string): Promise<DiceMatch[]> {
+        return await this.diceMatchService.matchHistory(username);
+    }
+
+    @Get('/ur/match-history/:user')
+    @ResponseSchema(DiceMatch, { isArray: true})
+    public async urMatchHistory(@Param('user') username: string): Promise<UrMatch[]> {
+        return await this.urMatchService.matchHistory(username);
     }
 
     @Get('/dice/match-history/:user/:opponent')
@@ -69,7 +78,7 @@ export class GameController {
     public async diceMatchHistoryWithOpponent(
         @Param('user') user: string,
         @Param('opponent') opponent: string): Promise<DiceMatch[]> {
-        return await this.diceMatchService.matchHistoryBetween('dice', user, opponent);
+        return await this.diceMatchService.matchHistoryBetween(user, opponent);
     }
 
     @Get('/dice/active')

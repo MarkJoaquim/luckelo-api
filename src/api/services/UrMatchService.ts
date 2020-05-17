@@ -44,18 +44,18 @@ export class UrMatchService {
         });
     }
 
-    public async matchHistory(game: string, username: string): Promise<UrMatch[]> {
+    public async matchHistory(username: string): Promise<UrMatch[]> {
         return await this.urMatchRepository
             .createQueryBuilder('match')
             .leftJoinAndSelect('match.player1', 'player1')
             .leftJoinAndSelect('match.player2', 'player2')
-            .where('player1.username = :username OR player2.username = :username', { username })
-            .andWhere('player1.outcome is not null')
+            .where('player1.outcome is not null')
+            .andWhere('(player1.username = :username OR player2.username = :username)', { username })
             .orderBy('match.created', 'DESC')
             .getMany();
     }
 
-    public async matchHistoryBetween(game: string, player1: string, player2: string): Promise<UrMatch[]> {
+    public async matchHistoryBetween(player1: string, player2: string): Promise<UrMatch[]> {
         return await this.urMatchRepository
             .createQueryBuilder('match')
             .leftJoinAndSelect('match.player1', 'p1')
@@ -85,15 +85,10 @@ export class UrMatchService {
 
     public async createInNewRoom(match: UrMatch): Promise<string> {
         match.room = nanoid(8);
-        try {
-            const createdMatch = await this.urMatchRepository.save(match);
+        const createdMatch = await this.urMatchRepository.save(match);
 
-            this.log.info(JSON.stringify(createdMatch));
-            return match.room;
-        } catch (err) {
-            this.log.error(err);
-        }
-        return undefined;
+        this.log.info(JSON.stringify(createdMatch));
+        return match.room;
     }
 
     public async createInExistingRoom(room: string, match: UrMatch): Promise<UrMatch> {

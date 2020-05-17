@@ -2,13 +2,15 @@ import { SocketController, OnConnect, OnDisconnect, ConnectedSocket, SocketIO, O
 import { SetupService } from '../socket-services';
 import { Server } from 'socket.io';
 import { DiceMatchService } from '../services/DiceMatchService';
+import { UrMatchService } from '../services/UrMatchService';
 
 @SocketController()
 export class FindMatchController {
 
     constructor(
         public setupService: SetupService,
-        public diceMatchService: DiceMatchService
+        public diceMatchService: DiceMatchService,
+        public urMatchService: UrMatchService
         ) {}
 
     @OnConnect()
@@ -41,7 +43,10 @@ export class FindMatchController {
         Object.values(ioServer.sockets.connected).map(skt => {
             roomsWithConnectedSockets.push(...Object.values(skt.rooms).filter(room => room !== skt.id));
         });
-
-        socket.emit('activeRooms', await this.diceMatchService.findRoomsInList(roomsWithConnectedSockets));
+        const matches: any[] = [
+            ...await this.diceMatchService.findRoomsInList(roomsWithConnectedSockets),
+            ...await this.urMatchService.findRoomsInList(roomsWithConnectedSockets),
+        ];
+        socket.emit('activeRooms', matches);
     }
 }
