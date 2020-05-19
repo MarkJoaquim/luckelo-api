@@ -14,9 +14,28 @@ export class UrService {
     // private TURN_TIME_LIMIT = 30000;
     private WARNING_TIME = 5000;
     private gameName = 'Ur';
+    private BLANK_SPACE = '-';
     private STARTING_PIECES = 7;
     private NUMBER_OF_LOTS = 4;
     private ROSETTES = new Set([3, 7, 13]);
+    private PLAYER_SPECIFICS = {
+        one: {
+            piece: '1',
+            opponent: '2',
+            spaces: new Set([0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20]),
+            getRelativeState: (state) => [...state.slice(0, 4), ...state.slice(8, 18)],
+            getRelativeMove: (globalMove) => globalMove === 20 ? 14 : (globalMove - (globalMove >= 8 ? 4 : 0)),
+            getGlobalMove: (move) => move + (move > 3 ? 4 : 0),
+        },
+        two: {
+            piece: '2',
+            opponent: '1',
+            spaces: new Set([4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20]),
+            getRelativeState: (state) => [...state.slice(4, 16), ...state.slice(18)],
+            getRelativeMove: (globalMove) => globalMove - 4 - (globalMove >= 18 ? 2 : 0),
+            getGlobalMove: (move) => move + 4 + (move > 11 ? 2 : 0),
+        },
+    };
 
     constructor(
         public randomService: RandomService,
@@ -51,7 +70,7 @@ export class UrService {
         match.player2.piecesHome = 0;
 
         match.gameName = this.gameName;
-        match.boardState = '-'.repeat(20);
+        match.boardState = this.BLANK_SPACE.repeat(20);
         return match;
     }
 
@@ -72,147 +91,129 @@ export class UrService {
 
     public async move(io: any, username: string, room: string, globalMove: number): Promise<void> {
         const match: UrMatch = await this.urMatchService.findActiveByRoom(room);
-        const state = match.boardState.split('');
 
-        this.log.info(JSON.stringify(match));
-        this.log.info('' + globalMove);
-
-        if (match.player1.username === username && match.player1.turn) {
-            const move = globalMove === 20 ? 14 : (globalMove - (globalMove >= 8 ? 4 : 0));
-            const p1state = [...state.slice(0, 4), ...state.slice(8, 18)];
-            this.log.info('' + move);
-            this.log.info(JSON.stringify(p1state));
-            const landingSquareValid = move === 14 || (p1state[move] !== '1' && !this.ROSETTES.has(move)) || p1state[move] === '-';
-            const leavingSquareValid = (move - match.player1.roll === -1 && match.player1.piecesAtStart > 0) || p1state[move - match.player1.roll] === '1';
-            if (landingSquareValid && leavingSquareValid) {
-                const movedFrom = move - match.player1.roll;
-                const globalMovedFrom = movedFrom + (movedFrom > 3 ? 4 : 0);
-
-                if (move === 14) {
-                    match.player1.piecesHome++;
-                } else {
-                    state[globalMove] = '1';
-                }
-
-                if (globalMovedFrom >= 0) {
-                    state[globalMovedFrom] = '-';
-                } else {
-                    match.player1.piecesAtStart--;
-                }
-
-                match.boardState = state.join('');
-
-                if (this.ROSETTES.has(move)) {
-                    match.player1.roll = this.roll();
-                } else {
-                    if (p1state[move] === '2') {
-                        match.player2.piecesAtStart++;
-                    }
-                    match.player2.roll = this.roll();
-                    match.player2.turn = true;
-                    match.player1.turn = false;
-                }
-            } else if (!this.validMoveExists('1', match.player1.roll, p1state, match.player1.piecesAtStart)) {
-                match.player2.roll = this.roll();
-                match.player2.turn = true;
-                match.player1.turn = false;
+        if (this.handleMove(match, username, globalMove)) {
+            if (this.timeouts[room] !== undefined) {
+                this.timeouts[room].forEach(timeout => clearTimeout(timeout));
+                this.timeouts[room] = [];
             }
-        } else if (match.player2.username === username && match.player2.turn) {
-            const move = globalMove - 4 - (globalMove >= 18 ? 2 : 0);
-            const p2state = [...state.slice(4, 16), ...state.slice(18)];
-            this.log.info('' + move);
-            this.log.info(JSON.stringify(p2state));
-            const landingSquareValid = move === 14 || (p2state[move] !== '2' && !this.ROSETTES.has(move)) || p2state[move] === '-';
-            const leavingSquareValid = (move - match.player2.roll === -1 && match.player2.piecesAtStart > 0) || p2state[move - match.player2.roll] === '2';
-            if (landingSquareValid && leavingSquareValid) {
-                const movedFrom = move - match.player2.roll;
-                const globalMovedFrom = movedFrom + 4 + (movedFrom > 11 ? 2 : 0);
 
-                if (move === 14) {
-                    match.player2.piecesHome++;
-                } else {
-                    state[globalMove] = '2';
-                }
-
-                if (globalMovedFrom >= 4) {
-                    state[globalMovedFrom] = '-';
-                } else {
-                    match.player2.piecesAtStart--;
-                }
-
-                match.boardState = state.join('');
-
-                if (this.ROSETTES.has(move)) {
-                    match.player2.roll = this.roll();
-                } else {
-                    if (p2state[move] === '1') {
-                        match.player1.piecesAtStart++;
-                    }
-                    match.player1.roll = this.roll();
-                    match.player1.turn = true;
-                    match.player2.turn = false;
-                }
-            } else if (!this.validMoveExists('2', match.player2.roll, p2state, match.player2.piecesAtStart)) {
-                match.player1.roll = this.roll();
-                match.player1.turn = true;
-                match.player2.turn = false;
+            if (match.player1.piecesHome === 7 || match.player2.piecesHome === 7) {
+                await this.gameOver(match);
             }
-        } else {
-            return;
-        }
-
-        if (this.timeouts[room] !== undefined) {
-            this.timeouts[room].forEach(timeout => clearTimeout(timeout));
-            this.timeouts[room] = [];
-        }
-
-        if (match.player1.piecesHome === 7 || match.player2.piecesHome === 7) {
-            this.gameOver(match);
-        }
-        // else {
-            // const newTimeouts = [
-            //     setTimeout(() => this.sendForcedEndWarning(io, room), this.TURN_TIME_LIMIT - this.WARNING_TIME),
-            //     setTimeout(() => this.forceEnd(io, room), this.TURN_TIME_LIMIT),
-            // ];
-            // if (this.timeouts[room] === undefined) {
-            //     this.timeouts[room] = newTimeouts;
-            // } else {
-            //     this.timeouts[room].push(...newTimeouts);
+            // else {
+                // const newTimeouts = [
+                //     setTimeout(() => this.sendForcedEndWarning(io, room), this.TURN_TIME_LIMIT - this.WARNING_TIME),
+                //     setTimeout(() => this.forceEnd(io, room), this.TURN_TIME_LIMIT),
+                // ];
+                // if (this.timeouts[room] === undefined) {
+                //     this.timeouts[room] = newTimeouts;
+                // } else {
+                //     this.timeouts[room].push(...newTimeouts);
+                // }
             // }
-        // }
 
-        io.to(room).emit('ur match', await this.urMatchService.update(match));
+            io.to(room).emit('ur match', await this.urMatchService.update(match));
+            io.to(room).emit('ur moves', this.validMovesInMatch(match));
+        }
     }
 
-    public validMoveExists(player: string, roll: number, relativeState: string[], piecesAtStart: number): boolean {
-        this.log.info('checking for valid moves');
-        if (roll === 0) {
-            return false;
+    public validMovesInMatch(match: UrMatch): number[]  {
+        let moveSet = new Set<number>();
+        if (match.player1.turn) {
+            moveSet = this.validMoves(match.player1, match.boardState.split(''), this.PLAYER_SPECIFICS.one);
+        } else if (match.player2.turn) {
+            moveSet = this.validMoves(match.player2, match.boardState.split(''), this.PLAYER_SPECIFICS.two);
+        }
+        return Array.from(moveSet);
+    }
+
+    public handleMove(match: UrMatch, username: string, globalMove: number): boolean {
+        const globalState = match.boardState.split('');
+        let mover: UrPlayer;
+        let other: UrPlayer;
+        let specs: any;
+        if (match.player1.username === username && match.player1.turn) {
+            mover = match.player1;
+            other = match.player2;
+            specs = this.PLAYER_SPECIFICS.one;
+        } else if (match.player2.username === username && match.player2.turn) {
+            mover = match.player2;
+            other = match.player1;
+            specs = this.PLAYER_SPECIFICS.two;
         }
 
-        if (piecesAtStart && relativeState[roll - 1] !== player) {
-            return true;
-        }
+        if (specs.spaces.has(globalMove)) {
+            const move = specs.getRelativeMove(globalMove);
+            const validMoves = this.validMoves(mover, globalState, specs);
+            if (validMoves.has(globalMove)) {
+                const movedFrom = move - mover.roll;
+                const globalMovedFrom = specs.getGlobalMove(movedFrom);
 
-        const validMove = relativeState.find((val, i) => {
-            if (val === player) {
-                if (i + roll === 14) {
-                    return true;
-                } if (i + roll > 14) {
-                    return false;
-                } else if (relativeState[i + roll] === '-') {
-                    return true;
-                } else if (relativeState[i + roll] !== player && !this.ROSETTES.has(i + roll)) {
-                    return true;
+                if (move === 14) {
+                    mover.piecesHome++;
+                } else {
+                    if (globalState[globalMove] === specs.opponent) {
+                        other.piecesAtStart++;
+                    }
+                    globalState[globalMove] = specs.piece;
                 }
-                return false;
+
+                if (movedFrom === -1) {
+                    mover.piecesAtStart--;
+                } else {
+                    globalState[globalMovedFrom] = this.BLANK_SPACE;
+                }
+
+                if (this.ROSETTES.has(move)) {
+                    mover.roll = this.roll();
+                } else {
+                    other.roll = this.roll();
+                    other.turn = true;
+                    mover.turn = false;
+                }
+
+                match.boardState = globalState.join('');
+                return true;
+            } else if (validMoves.size === 0) {
+                other.roll = this.roll();
+                other.turn = true;
+                mover.turn = false;
+
+                return true;
             }
-            return false;
-        });
+        }
 
-        this.log.info(JSON.stringify(validMove));
+        return false;
+    }
 
-        return validMove !== undefined;
+    public validMoves(player: UrPlayer, globalState: string[], specs: any): Set<number> {
+        const roll = player.roll;
+        const state = specs.getRelativeState(globalState);
+        const piece = specs.piece;
+        const validMoves = new Set<number>();
+
+        if (roll === 0) {
+            return validMoves;
+        }
+
+        if (player.piecesAtStart && state[roll - 1] !== piece) {
+            validMoves.add(specs.getGlobalMove(roll - 1));
+        }
+
+        for (let i = 0; i < 14; i++) {
+            const val = state[i];
+            if (val === piece) {
+                if (i + roll === 14) {
+                    validMoves.add(20);
+                } else if (i + roll < 14
+                    && (state[i + roll] === this.BLANK_SPACE || (state[i + roll] !== piece && !this.ROSETTES.has(i + roll)))) {
+                    validMoves.add(specs.getGlobalMove(i + roll));
+                }
+            }
+        }
+
+        return validMoves;
     }
 
     public async gameOver(match: UrMatch): Promise<UrMatch> {
@@ -220,6 +221,8 @@ export class UrService {
         const p2 = match.player2;
 
         let newElos;
+        p1.turn = false;
+        p2.turn = false;
         if (p1.piecesHome === 7) {
             p1.outcome = 'Victory';
             p2.outcome = 'Defeat';

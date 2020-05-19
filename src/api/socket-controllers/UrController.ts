@@ -20,6 +20,7 @@ export class DiceController {
         }
         this.log.info(`${JSON.stringify(match)}`);
         socket.emit('ur match', match);
+        socket.emit('ur moves', this.urService.validMovesInMatch(match));
 
         const spectators: string[] = [];
         Object.values(io.sockets.connected).map(skt => {
