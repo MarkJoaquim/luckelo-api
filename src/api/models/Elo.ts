@@ -28,7 +28,7 @@ export class Elo {
     constructor(username: string, game: string) {
         this.username = username;
         this.game = game;
-        this.elo = 1200;
+        this.elo = 1000;
     }
 
     public toString(): string {

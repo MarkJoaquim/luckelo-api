@@ -10,6 +10,7 @@ import { User } from '../models/User';
 
 @Service()
 export class EloService {
+    private K = 32;
 
     constructor(
         @OrmRepository() private eloRepository: EloRepository,
@@ -60,12 +61,15 @@ export class EloService {
         const player1Elo = await this.findOne(player1, game);
         const player2Elo = await this.findOne(player2, game);
 
+        const p1Expected = this.getExpectedScore(player1Elo.elo, player2Elo.elo);
+        const p2Expected = 1 - p1Expected;
+
         if (draw) {
-            player1Elo.elo += Math.floor((player2Elo.elo - player1Elo.elo) / 10);
-            player2Elo.elo += Math.floor((player1Elo.elo - player2Elo.elo) / 10);
+            player1Elo.elo += Math.round(this.K * (0.5 - p1Expected));
+            player2Elo.elo += Math.round(this.K * (0.5 - p2Expected));
         } else {
-            player1Elo.elo += 10;
-            player2Elo.elo -= 10;
+            player1Elo.elo += Math.round(this.K * (1 - p1Expected));
+            player2Elo.elo += Math.round(this.K * (0 - p1Expected));
         }
 
         await this.eloRepository.save(player1Elo);
@@ -77,4 +81,7 @@ export class EloService {
         return result;
     }
 
+    private getExpectedScore(playerElo: number, opponentElo: number): number {
+        return Math.pow(1 + Math.pow(10, (opponentElo - playerElo) / 400), -1);
+    }
 }
