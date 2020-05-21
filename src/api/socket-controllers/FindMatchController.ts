@@ -1,5 +1,5 @@
 import { SocketController, ConnectedSocket, OnMessage, MessageBody, SocketIO } from 'socket-controllers';
-import { FindMatchService, DiceService, UrService } from '../socket-services';
+import { FindMatchService, DiceService, UrService, PokerService } from '../socket-services';
 import { MatchSearch, MatchDetails } from './interfaces';
 import { Logger, LoggerInterface } from '../../decorators/Logger';
 import { EloService } from '../services/EloService';
@@ -11,6 +11,7 @@ export class FindMatchController {
         public findMatchService: FindMatchService,
         public diceService: DiceService,
         public urService: UrService,
+        public pokerService: PokerService,
         public eloService: EloService,
         @Logger(__filename) private log: LoggerInterface
         ) {}
@@ -44,6 +45,8 @@ export class FindMatchController {
             return await this.diceService.createGame(match);
         } else if (match.game.toLowerCase() === 'ur') {
             return await this.urService.createGame(match);
+        } else if (match.game.toLowerCase() === 'poker') {
+            return await this.pokerService.createGame(match);
         }
 
         return undefined;
