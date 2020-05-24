@@ -58,12 +58,8 @@ export class DiceService {
                 this.timeouts[room] = [];
             }
 
-            io.to(room).emit('dice rollResult', diceRollResult);
-
-            // TODO: better way of assuring this match wasn't already completed.
             if (match.players.findIndex(player => !player.roll) === -1) {
                 match = await this.gameOver(match);
-                io.to(room).emit('dice match', match);
             } else {
                 const newTimeouts = [
                     setTimeout(() => this.sendForcedEndWarning(io, room), this.TURN_TIME_LIMIT - this.WARNING_TIME),
@@ -76,7 +72,7 @@ export class DiceService {
                 }
             }
 
-            this.diceMatchService.update(match);
+            io.to(room).emit('dice match', await this.diceMatchService.update(match));
 
             if (this.rolls.length < 3) {
                 this.rolls.push(...await this.randomService.getRandomNumbers(1, 6, 6));
@@ -143,9 +139,9 @@ export class DiceService {
             newMatch.gameName = this.gameName;
             newMatch = await this.diceMatchService.createInExistingRoom(room, newMatch);
 
-            io.to(room).emit('dice newMatch', newMatch);
+            io.to(room).emit('dice match', newMatch);
         } else {
-            io.to(room).emit('dice rematch', { username });
+            io.to(room).emit('dice match', match);
         }
     }
 

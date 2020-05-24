@@ -94,29 +94,29 @@ export class DiceMatchService {
         match.room = nanoid(8);
         const createdMatch = await this.diceMatchRepository.save(match);
         this.log.info(JSON.stringify(createdMatch));
-        createdMatch.players.forEach(player => {
+        await Promise.all(createdMatch.players.map(async player => {
             player.matchId = createdMatch.id;
-            this.dicePlayerRepository.save(player);
-        });
+            await this.dicePlayerRepository.save(player);
+        }));
         return match.room;
     }
 
     public async createInExistingRoom(room: string, match: DiceMatch): Promise<DiceMatch> {
         match.room = room;
         const createdMatch = await this.diceMatchRepository.save(match);
-        createdMatch.players.forEach(player => {
+        await Promise.all(createdMatch.players.map(async player => {
             player.matchId = createdMatch.id;
-            this.dicePlayerRepository.save(player);
-        });
+            await this.dicePlayerRepository.save(player);
+        }));
         return createdMatch;
     }
 
     public async update(match: DiceMatch): Promise<DiceMatch> {
         const matchCopy = { ...match };
 
-        matchCopy.players.forEach(player => {
-            this.dicePlayerRepository.save(player);
-        });
+        await Promise.all(matchCopy.players.map(async player => {
+            await this.dicePlayerRepository.save(player);
+        }));
 
         // Have to delete the relation or else it tries to save it and fails.
         delete matchCopy.players;

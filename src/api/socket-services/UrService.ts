@@ -277,6 +277,7 @@ export class UrService {
             newMatch = await this.urMatchService.createInExistingRoom(room, newMatch);
 
             io.to(room).emit('ur match', newMatch);
+            io.to(room).emit('ur moves', this.validMovesInMatch(newMatch));
         } else {
             io.to(room).emit('ur match', match);
         }
