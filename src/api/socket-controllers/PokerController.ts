@@ -19,7 +19,7 @@ export class DiceController {
             socket.join(message.room);
         }
         this.log.info(`${JSON.stringify(match)}`);
-        socket.emit('poker match', match);
+        this.pokerService.safeSend(socket, match);
 
         const spectators: string[] = [];
         Object.values(io.sockets.connected).map(skt => {
@@ -36,10 +36,10 @@ export class DiceController {
         this.pokerService.bet(io, socket.user, message.room, message.amount);
     }
 
-    @OnMessage('poker nextHand')
-    public nextHand(@SocketIO() io: any, @ConnectedSocket() socket: any, @MessageBody() message: any): void {
-        this.log.info(`Request for next hand received from ${socket.user} in room ${message.room}`);
-        this.pokerService.nextHandRequest(io, socket.user, message.room);
+    @OnMessage('poker show')
+    public show(@SocketIO() io: any, @ConnectedSocket() socket: any, @MessageBody() message: any): void {
+        this.log.info(`Show card from ${socket.user} in room ${message.room} card: ${message.card}`);
+        this.pokerService.showCard(io, socket.user, message.room, message.card);
     }
 
     @OnMessage('poker requestRematch')

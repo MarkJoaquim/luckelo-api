@@ -11,6 +11,8 @@ import { Elo } from '../models/Elo';
 import { DiceMatch } from '../models/DiceMatch';
 import { UrMatchService } from '../services/UrMatchService';
 import { UrMatch } from '../models/UrMatch';
+import { PokerMatchService } from '../services/PokerMatchService';
+import { PokerMatch } from '../models/PokerMatch';
 
 class BaseGame {
     @IsNotEmpty()
@@ -30,7 +32,8 @@ export class GameController {
         private gameService: GameService,
         private eloService: EloService,
         private diceMatchService: DiceMatchService,
-        private urMatchService: UrMatchService
+        private urMatchService: UrMatchService,
+        private pokerMatchService: PokerMatchService
     ) { }
 
     // Make this faster by starting with Elos...
@@ -71,6 +74,12 @@ export class GameController {
     @ResponseSchema(DiceMatch, { isArray: true})
     public async urMatchHistory(@Param('user') username: string): Promise<UrMatch[]> {
         return await this.urMatchService.matchHistory(username);
+    }
+
+    @Get('/poker/match-history/:user')
+    @ResponseSchema(DiceMatch, { isArray: true})
+    public async pokerMatchHistory(@Param('user') username: string): Promise<PokerMatch[]> {
+        return await this.pokerMatchService.matchHistory(username);
     }
 
     @Get('/dice/match-history/:user/:opponent')

@@ -36,6 +36,10 @@ export class PokerMatch {
 
     @Column()
     @IsNotEmpty()
+    public pot: number;
+
+    @Column()
+    @IsNotEmpty()
     public handComplete: boolean;
 
     @Column()

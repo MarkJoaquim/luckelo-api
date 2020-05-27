@@ -3,6 +3,7 @@ import { SetupService } from '../socket-services';
 import { Server } from 'socket.io';
 import { DiceMatchService } from '../services/DiceMatchService';
 import { UrMatchService } from '../services/UrMatchService';
+import { PokerMatchService } from '../services/PokerMatchService';
 
 @SocketController()
 export class FindMatchController {
@@ -10,7 +11,8 @@ export class FindMatchController {
     constructor(
         public setupService: SetupService,
         public diceMatchService: DiceMatchService,
-        public urMatchService: UrMatchService
+        public urMatchService: UrMatchService,
+        public pokerMatchService: PokerMatchService
         ) {}
 
     @OnConnect()
@@ -46,6 +48,7 @@ export class FindMatchController {
         const matches: any[] = [
             ...await this.diceMatchService.findRoomsInList(roomsWithConnectedSockets),
             ...await this.urMatchService.findRoomsInList(roomsWithConnectedSockets),
+            ...await this.pokerMatchService.findRoomsInList(roomsWithConnectedSockets),
         ];
         socket.emit('activeRooms', matches);
     }

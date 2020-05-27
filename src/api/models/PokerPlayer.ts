@@ -41,9 +41,6 @@ export class PokerPlayer {
     public finalElo: number;
 
     @Column()
-    public nextHand: boolean;
-
-    @Column()
     public rematchRequested: boolean;
 
     @ManyToOne(type => User, user => user.username)

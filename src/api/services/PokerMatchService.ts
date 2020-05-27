@@ -18,8 +18,8 @@ export class PokerMatchService {
         return await this.pokerMatchRepository.find();
     }
 
-    public async findRoomsInList(rooms: string[]): Promise<PokerMatch[]> {
-        return await this.pokerMatchRepository
+    public async findRoomsInList(rooms: string[]): Promise<any[]> {
+        const pokerMatches = await this.pokerMatchRepository
                 .createQueryBuilder('match')
                 .leftJoinAndSelect('match.player1', 'player1')
                 .leftJoinAndSelect('match.player2', 'player2')
@@ -28,12 +28,17 @@ export class PokerMatchService {
                     const sq = qb.subQuery()
                         .select('match.id')
                         .from(PokerMatch, 'match2')
-                        .where('match2.room = match.room', { rooms })
+                        .where('match2.room = match.room')
                         .andWhere('match2.id > match.id')
                         .getQuery();
                     return 'not exists ' + sq;
                 })
                 .getMany();
+        // Adding gameName to
+        return pokerMatches.map(match => {
+            (match as any).gameName = 'Poker';
+            return match;
+        });
     }
 
     public async findByRoom(room: string): Promise<PokerMatch> {
