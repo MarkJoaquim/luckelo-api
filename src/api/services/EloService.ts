@@ -57,6 +57,14 @@ export class EloService {
         return await this.eloRepository.save(elo);
     }
 
+    public async modifyElo(game: string, player: string, expected: number, outcome: number): Promise<number> {
+        const playerElo = await this.findOne(player, game);
+
+        playerElo.elo += Math.round(this.K * (outcome - expected));
+
+        return (await this.eloRepository.save(playerElo)).elo;
+    }
+
     public async adjust(game: string, player1: string, player2: string, draw: boolean = false): Promise<Record<string, number>> {
         const player1Elo = await this.findOne(player1, game);
         const player2Elo = await this.findOne(player2, game);
