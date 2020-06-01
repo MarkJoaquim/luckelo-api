@@ -1,8 +1,9 @@
 import * as bcrypt from 'bcrypt';
 import { Exclude } from 'class-transformer';
 import { IsNotEmpty } from 'class-validator';
-import { BeforeInsert, Column, Entity, PrimaryColumn, BeforeUpdate, OneToMany, JoinColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn, OneToMany, JoinColumn, OneToOne } from 'typeorm';
 import { Elo } from './Elo';
+import { Charm } from './Charm';
 
 @Entity()
 export class User {
@@ -20,7 +21,6 @@ export class User {
 
     public static comparePassword(user: User, password: string): Promise<boolean> {
         return new Promise((resolve, reject) => {
-
             bcrypt.compare(password, user.password, (err, res) => {
                 resolve(res === true);
             });
@@ -36,16 +36,23 @@ export class User {
     @Exclude()
     public password: string;
 
+    /* tslint:disable no-inferrable-types */
+    @IsNotEmpty()
+    @Column()
+    public currency: number = 0;
+
     @OneToMany(type => Elo, elo => elo.username)
     @JoinColumn({ name: 'username'})
     public elos: Elo[];
+
+    @OneToOne(type => Charm, charm => charm.user)
+    @JoinColumn()
+    public charm: Charm;
 
     public toString(): string {
         return this.username;
     }
 
-    @BeforeInsert()
-    @BeforeUpdate()
     public async hashPassword(): Promise<void> {
         this.password = await User.hashPassword(this.password);
     }

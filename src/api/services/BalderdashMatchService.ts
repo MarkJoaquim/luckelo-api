@@ -48,7 +48,7 @@ export class BalderdashMatchService {
 
     public async findByRoom(room: string): Promise<BalderdashMatch> {
         return await this.balderdashMatchRepository.findOne({
-            relations: ['players', 'word'],
+            relations: ['players', 'players.user', 'players.user.charm', 'word'],
             where: { room },
             order: { id: 'DESC' },
         });
@@ -94,6 +94,8 @@ export class BalderdashMatchService {
     public async findActiveByRoom(room: string): Promise<BalderdashMatch> {
         return await this.balderdashMatchRepository.createQueryBuilder('match')
             .leftJoinAndSelect('match.players', 'player')
+            .leftJoinAndSelect('player.user', 'user')
+            .leftJoinAndSelect('user.charm', 'charm')
             .leftJoinAndSelect('match.word', 'word')
             .where('match.room = :room', { room })
             .andWhere('player.outcome is null')
@@ -109,8 +111,7 @@ export class BalderdashMatchService {
     }
 
     public async leaveMatch(player: BalderdashPlayer): Promise<void> {
-        player.matchId = undefined;
-        await this.balderdashPlayerRepository.update(player.id, player);
+        await this.balderdashPlayerRepository.update(player.id, { matchId: undefined });
     }
 
     public async createInNewRoom(match: BalderdashMatch): Promise<string> {
@@ -131,7 +132,7 @@ export class BalderdashMatchService {
             player.matchId = createdMatch.id;
             await this.balderdashPlayerRepository.save(player);
         }));
-        return createdMatch;
+        return await this.findActiveByRoom(room);
     }
 
     public async update(match: BalderdashMatch): Promise<BalderdashMatch> {

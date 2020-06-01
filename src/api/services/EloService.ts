@@ -7,6 +7,7 @@ import { Elo } from '../models/Elo';
 import { EloRepository } from '../repositories/EloRepository';
 import { events } from '../subscribers/events';
 import { User } from '../models/User';
+import { UserService } from './UserService';
 
 @Service()
 export class EloService {
@@ -14,6 +15,7 @@ export class EloService {
 
     constructor(
         @OrmRepository() private eloRepository: EloRepository,
+        private userService: UserService,
         @EventDispatcher() private eventDispatcher: EventDispatcherInterface,
         @Logger(__filename) private log: LoggerInterface
     ) { }
@@ -60,7 +62,10 @@ export class EloService {
     public async modifyElo(game: string, player: string, expected: number, outcome: number): Promise<number> {
         const playerElo = await this.findOne(player, game);
 
-        playerElo.elo += Math.round(this.K * (outcome - expected));
+        const eloChange = Math.round(this.K * (outcome - expected));
+        playerElo.elo += eloChange;
+
+        this.userService.adjustCurrencyAfterGame(player, game, eloChange);
 
         return (await this.eloRepository.save(playerElo)).elo;
     }
@@ -72,13 +77,20 @@ export class EloService {
         const p1Expected = this.getExpectedScore(player1Elo.elo, player2Elo.elo);
         const p2Expected = 1 - p1Expected;
 
+        let p1EloChange: number;
+        let p2EloChange: number;
         if (draw) {
-            player1Elo.elo += Math.round(this.K * (0.5 - p1Expected));
-            player2Elo.elo += Math.round(this.K * (0.5 - p2Expected));
+            p1EloChange = Math.round(this.K * (0.5 - p1Expected));
+            p2EloChange = Math.round(this.K * (0.5 - p2Expected));
         } else {
-            player1Elo.elo += Math.round(this.K * (1 - p1Expected));
-            player2Elo.elo += Math.round(this.K * (0 - p1Expected));
+            p1EloChange = Math.round(this.K * (1 - p1Expected));
+            p2EloChange = Math.round(this.K * (0 - p1Expected));
         }
+        player1Elo.elo += p1EloChange;
+        player2Elo.elo += p2EloChange;
+
+        this.userService.adjustCurrencyAfterGame(player1, game, p1EloChange);
+        this.userService.adjustCurrencyAfterGame(player2, game, p2EloChange);
 
         await this.eloRepository.save(player1Elo);
         await this.eloRepository.save(player2Elo);

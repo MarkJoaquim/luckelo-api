@@ -18,7 +18,6 @@ export class DiceController {
             socket.to(message.room).emit('joinedRoom', { username: socket.user });
             socket.join(message.room);
         }
-        this.log.info(`${JSON.stringify(match)}`);
         socket.emit('dice match', match);
 
         const spectators: string[] = [];

@@ -39,7 +39,7 @@ export class DiceMatchService {
 
     public async findByRoom(room: string): Promise<DiceMatch> {
         return await this.diceMatchRepository.findOne({
-            relations: ['players'],
+            relations: ['players', 'players.user', 'players.user.charm'],
             where: { room },
             order: { id: 'DESC' },
         });
@@ -77,6 +77,8 @@ export class DiceMatchService {
         return await this.diceMatchRepository
             .createQueryBuilder('match')
             .leftJoinAndSelect('match.players', 'player')
+            .leftJoinAndSelect('player.user', 'user')
+            .leftJoinAndSelect('user.charm', 'charm')
             .where('player.outcome is null')
             .getMany();
     }
@@ -84,6 +86,8 @@ export class DiceMatchService {
     public async findActiveByRoom(room: string): Promise<DiceMatch> {
         return await this.diceMatchRepository.createQueryBuilder('match')
             .leftJoinAndSelect('match.players', 'player')
+            .leftJoinAndSelect('player.user', 'user')
+            .leftJoinAndSelect('user.charm', 'charm')
             .where('match.room = :room', { room })
             .andWhere('player.outcome is null')
             .orderBy('match.id', 'DESC')
@@ -108,7 +112,7 @@ export class DiceMatchService {
             player.matchId = createdMatch.id;
             await this.dicePlayerRepository.save(player);
         }));
-        return createdMatch;
+        return await this.findActiveByRoom(room);
     }
 
     public async update(match: DiceMatch): Promise<DiceMatch> {

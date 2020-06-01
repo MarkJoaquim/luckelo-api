@@ -11,6 +11,12 @@ import { UserNotFoundError } from '../errors/UserNotFoundError';
 
 @Service()
 export class UserService {
+    private CURRENCY_REWARD_SCALE: Record<string, number> = {
+        Ur: 2,
+        Balderdash: 0.5,
+        Dice: 0.25,
+        Poker: 1,
+    };
 
     constructor(
         @OrmRepository() private userRepository: UserRepository,
@@ -39,6 +45,7 @@ export class UserService {
     public async create(user: User): Promise<User> {
         this.log.info('Create a new user => ', user.toString());
         try {
+            await user.hashPassword();
             const result = await this.userRepository.insert(user);
             const newUser = result.identifiers[0] as User;
             this.eventDispatcher.dispatch(events.user.created, newUser);
@@ -54,4 +61,18 @@ export class UserService {
         return;
     }
 
+    public async adjustCurrencyAfterGame(username: string, game: string, eloChange: number): Promise<void> {
+        if (eloChange > 0) {
+            const value = eloChange * this.CURRENCY_REWARD_SCALE[game];
+            this.adjustCurrency(username, value);
+        }
+    }
+
+    public async adjustCurrency(username: string, amount: number): Promise<void> {
+        await this.userRepository.createQueryBuilder()
+            .update(User)
+            .set({ currency: () => `currency + ${Math.floor(amount)}`})
+            .where('username = :username', { username })
+            .execute();
+    }
 }

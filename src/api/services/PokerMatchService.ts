@@ -22,7 +22,11 @@ export class PokerMatchService {
         const pokerMatches = await this.pokerMatchRepository
                 .createQueryBuilder('match')
                 .leftJoinAndSelect('match.player1', 'player1')
+                .leftJoinAndSelect('player1.user', 'user1')
+                .leftJoinAndSelect('user1.charm', 'charm1')
                 .leftJoinAndSelect('match.player2', 'player2')
+                .leftJoinAndSelect('player2.user', 'user2')
+                .leftJoinAndSelect('user2.charm', 'charm2')
                 .where('match.room IN (:...rooms)', { rooms })
                 .andWhere(qb => {
                     const sq = qb.subQuery()
@@ -43,7 +47,7 @@ export class PokerMatchService {
 
     public async findByRoom(room: string): Promise<PokerMatch> {
         return await this.pokerMatchRepository.findOne({
-            relations: ['player1', 'player2'],
+            relations: ['player1', 'player1.user', 'player1.user.charm', 'player2', 'player2.user', 'player2.user.charm'],
             where: { room },
             order: { id: 'DESC' },
         });
@@ -81,7 +85,11 @@ export class PokerMatchService {
     public async findActiveByRoom(room: string): Promise<PokerMatch> {
         return await this.pokerMatchRepository.createQueryBuilder('match')
             .leftJoinAndSelect('match.player1', 'player1')
+            .leftJoinAndSelect('player1.user', 'user1')
+            .leftJoinAndSelect('user1.charm', 'charm1')
             .leftJoinAndSelect('match.player2', 'player2')
+            .leftJoinAndSelect('player2.user', 'user2')
+            .leftJoinAndSelect('user2.charm', 'charm2')
             .where('match.room = :room', { room })
             .andWhere('player1.outcome is null')
             .orderBy('match.id', 'DESC')
@@ -98,9 +106,9 @@ export class PokerMatchService {
 
     public async createInExistingRoom(room: string, match: PokerMatch): Promise<PokerMatch> {
         match.room = room;
-        const createdMatch = await this.pokerMatchRepository.save(match);
+        await this.pokerMatchRepository.save(match);
 
-        return createdMatch;
+        return await this.findActiveByRoom(room);
     }
 
     public async update(match: PokerMatch): Promise<PokerMatch> {

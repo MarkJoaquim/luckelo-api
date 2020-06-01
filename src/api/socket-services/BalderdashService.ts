@@ -50,8 +50,9 @@ export class BalderdashService {
             newPlayer.initialElo = elo.elo;
 
             match.players.push(newPlayer);
+            await this.balderdashMatchService.update(match);
 
-            io.to(room).emit('balderdash match', await this.balderdashMatchService.update(match));
+            io.to(room).emit('balderdash match', await this.balderdashMatchService.findByRoom(room));
         }
 
         return match;

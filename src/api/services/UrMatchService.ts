@@ -38,7 +38,7 @@ export class UrMatchService {
 
     public async findByRoom(room: string): Promise<UrMatch> {
         return await this.urMatchRepository.findOne({
-            relations: ['player1', 'player2'],
+            relations: ['player1', 'player1.user', 'player1.user.charm', 'player2', 'player2.user', 'player2.user.charm'],
             where: { room },
             order: { id: 'DESC' },
         });
@@ -76,7 +76,11 @@ export class UrMatchService {
     public async findActiveByRoom(room: string): Promise<UrMatch> {
         return await this.urMatchRepository.createQueryBuilder('match')
             .leftJoinAndSelect('match.player1', 'player1')
+            .leftJoinAndSelect('player1.user', 'user1')
+            .leftJoinAndSelect('user1.charm', 'charm1')
             .leftJoinAndSelect('match.player2', 'player2')
+            .leftJoinAndSelect('player2.user', 'user2')
+            .leftJoinAndSelect('user2.charm', 'charm2')
             .where('match.room = :room', { room })
             .andWhere('player1.outcome is null')
             .orderBy('match.id', 'DESC')
@@ -93,9 +97,9 @@ export class UrMatchService {
 
     public async createInExistingRoom(room: string, match: UrMatch): Promise<UrMatch> {
         match.room = room;
-        const createdMatch = await this.urMatchRepository.save(match);
+        await this.urMatchRepository.save(match);
 
-        return createdMatch;
+        return await this.findActiveByRoom(room);
     }
 
     public async update(match: UrMatch): Promise<UrMatch> {
