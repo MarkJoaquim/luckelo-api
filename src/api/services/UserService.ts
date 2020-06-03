@@ -68,11 +68,14 @@ export class UserService {
         }
     }
 
-    public async adjustCurrency(username: string, amount: number): Promise<void> {
-        await this.userRepository.createQueryBuilder()
+    public async adjustCurrency(username: string, amount: number): Promise<boolean> {
+        const updateResult = await this.userRepository.createQueryBuilder()
             .update(User)
             .set({ currency: () => `currency + ${Math.floor(amount)}`})
             .where('username = :username', { username })
+            .andWhere('currency >= :amount * -1', { amount })
             .execute();
+
+        return updateResult.affected === 1;
     }
 }

@@ -11,7 +11,7 @@ import { User } from '../models/User';
 @Service()
 export class CharmService {
     private COSTS: Record<string, (num: number) => number> = {
-        reroll: (num) => 5,
+        reroll: (num) => 1,
         pixel: (num) => Math.floor(Math.pow(num, 1.3)),
         color: (num) => Math.floor(Math.pow(num, 2)),
     };
@@ -40,12 +40,12 @@ export class CharmService {
         const user = await this.userRepository.findOne(username, { relations: ['charm'] });
 
         const cost = this.COSTS.color(user.charm.palette.length);
-        if (user.currency >= cost) {
-            await this.userService.adjustCurrency(username, -cost);
+        if (await this.userService.adjustCurrency(username, -cost)) {
+            user.currency -= cost;
             user.charm.palette.push(this.getRandomColor());
+            await this.charmRepository.save(user.charm);
         }
 
-        await this.charmRepository.save(user.charm);
         return user;
     }
 
@@ -54,12 +54,12 @@ export class CharmService {
 
         const currentSize = Math.sqrt(user.charm.charm.length);
         const cost = this.COSTS.pixel(currentSize);
-        if (user.currency >= cost) {
-            await this.userService.adjustCurrency(username, -cost);
+        if (await this.userService.adjustCurrency(username, -cost)) {
+            user.currency -= cost;
             user.charm.charm = [...Array(Math.pow(currentSize + 1, 2))].fill(0);
+            await this.charmRepository.save(user.charm);
         }
 
-        await this.charmRepository.save(user.charm);
         return user;
     }
 
@@ -67,12 +67,13 @@ export class CharmService {
         const user = await this.userRepository.findOne(username, { relations: ['charm'] });
 
         const cost = this.COSTS.reroll(0);
-        if (paletteIndex < user.charm.palette.length && user.currency >= cost) {
-            await this.userService.adjustCurrency(username, -cost);
+        if (paletteIndex < user.charm.palette.length &&
+            await this.userService.adjustCurrency(username, -cost)) {
+            user.currency -= cost;
             user.charm.palette[paletteIndex] = this.getRandomColor();
+            await this.charmRepository.save(user.charm);
         }
 
-        await this.charmRepository.save(user.charm);
         return user;
     }
 
