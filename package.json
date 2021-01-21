@@ -53,7 +53,7 @@
     "routing-controllers-openapi": "^1.7.0",
     "serve-favicon": "^2.4.5",
     "socket-controllers": "0.0.5",
-    "socket.io": "^2.3.0",
+    "socket.io": "^2.4.0",
     "supertest": "^3.0.0",
     "swagger-ui-express": "4.0.1",
     "ts-node": "7.0.1",
